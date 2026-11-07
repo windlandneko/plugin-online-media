@@ -35,13 +35,12 @@ function headerKey(headers: Record<string, string>) {
 }
 
 type MediaKind = 'video' | 'audio'
-const mediaKinds = (f: YTDL.Video) =>
-  (['video', 'audio'] as MediaKind[]).filter(
-    (kind) =>
-      f[kind === 'video' ? 'vcodec' : 'acodec'] !== 'none' &&
-      (f[kind === 'video' ? 'vcodec' : 'acodec'] ||
-        f[kind === 'video' ? 'acodec' : 'vcodec'] === 'none'),
-  )
+function mediaKinds({ vcodec, acodec }: YTDL.Video): MediaKind[] {
+  const kinds: MediaKind[] = []
+  if (vcodec !== 'none' && (vcodec || acodec === 'none')) kinds.push('video')
+  if (acodec !== 'none' && (acodec || vcodec === 'none')) kinds.push('audio')
+  return kinds
+}
 
 function stream(url: string, metadata: string[], duration?: number) {
   return [
