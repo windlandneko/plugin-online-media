@@ -89,7 +89,7 @@ export async function runYTDLHook(url: string) {
     if (arg) args.push(arg);
   });
 
-  if (includeSubs) args.push("--write-subs");
+  if (includeSubs) args.push("--write-subs")
   const languages = allsubs && includeSubs ? preferredSubtitleLanguages() : []
   if (allsubs && includeSubs) {
     // Canonical languages exclude YouTube's translations from other subtitle tracks.

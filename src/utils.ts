@@ -106,7 +106,7 @@ function joinURL(baseURL: string, fragment: YTDL.URLLike) {
     // make absolute url
     const url = fragment.path;
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    const [, proto, domain, rest] = baseURL.match(/(https?:\/\/)([^\/]+\/)(.*)\/?/);
+    const [, proto, domain, rest] = baseURL.match(/(https?:\/\/)([^/]+\/)(.*)\/?/);
     const segs = rest.split("/").concat(url.split("/"));
     const resolved: string[] = [];
     for (const seg of segs) {
