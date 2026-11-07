@@ -13,9 +13,6 @@ export const opt = {
   get try_ytdl_first(): boolean {
     return preferences.get("try_ytdl_first");
   },
-  get use_manifests(): boolean {
-    return preferences.get("use_manifests");
-  },
   get rawOptions(): string {
     return preferences.get("raw_options");
   },

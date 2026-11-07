@@ -8,6 +8,7 @@ declare namespace YTDL {
     | "mms"
     | "f4m"
     | "ism"
+    | "mhtml"
     | "http_dash_segments"
     | "m3u8"
     | "m3u8_native";
@@ -17,7 +18,25 @@ declare namespace YTDL {
     title: string;
   }
 
+  export interface Subtitle {
+    url: string
+    ext: string
+    name?: string
+    data?: string
+    _auto?: boolean
+    protocol?: string
+  }
+
   interface _BaseEntity {
+    abr?: number
+    asr?: number
+    audio_channels?: number
+    language?: string
+    has_drm?: boolean
+    requested_downloads?: Video[]
+    subtitles?: Record<string, Subtitle[]>
+    automatic_captions?: Record<string, Subtitle[]>
+
     _type?: string;
 
     id: string;
@@ -51,10 +70,7 @@ declare namespace YTDL {
     dynamic_range?: string;
     chapters: Chapter[];
 
-    requested_subtitles?: Record<
-      string,
-      { url: string; ext: string; name?: string; data?: string; _auto: boolean }
-    >;
+    requested_subtitles?: Record<string, Subtitle>;
     formats?: Video[];
     requested_formats?: Video[];
 

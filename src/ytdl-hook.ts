@@ -6,13 +6,16 @@ import {
   getIndexFromYouTubePlaylist,
   edlTrackJoined,
 } from "./utils";
-import { addVideo, isSwitchingFormat } from "./add-video";
+import { addVideo } from "./add-video";
 import { opt } from "./options";
 import { findBinary, jsRuntimeOption } from "./binary";
+
+import { preferredSubtitleLanguages, subtitleLanguagePattern, subtitleLanguageMatcher } from './subtitles'
 
 const { core, console, mpv, utils, global } = iina;
 
 export let currentURL: string;
+export let subtitleFormat = 'ass/srt/best'
 
 interface TempOption {
   proxy: string | null;
@@ -20,14 +23,11 @@ interface TempOption {
 }
 
 export async function runYTDLHook(url: string) {
-  if (isSwitchingFormat) {
-    core.osd("Switching quality…");
-  } else {
-    core.osd("Fetching online media information…");
-  }
+  core.osd("Fetching online media information…");
 
   let format = opt.format;
   let allsubs = true;
+  subtitleFormat = 'ass/srt/best'
   const option: TempOption = {
     proxy: null,
     usePlaylist: false,
@@ -44,7 +44,7 @@ export async function runYTDLHook(url: string) {
     "--dump-single-json",
     "--flat-playlist",
     "--sub-format",
-    "ass/srt/best",
+    subtitleFormat,
   ];
 
   if (mpv.getString("options/vid") === "no") {
@@ -78,6 +78,8 @@ export async function runYTDLHook(url: string) {
       }
       if (["sub-lang", "sub-langs", "srt-lang"].includes(argName) && argValue) {
         allsubs = false;
+      } else if (argName === "sub-format" && argValue) {
+        subtitleFormat = argValue
       } else if (argName === "proxy" && argValue) {
         option.proxy = argValue;
       } else if (argName === "yes-playlist") {
@@ -87,8 +89,12 @@ export async function runYTDLHook(url: string) {
     if (arg) args.push(arg);
   });
 
+  if (includeSubs) args.push("--write-subs");
+  const languages = allsubs && includeSubs ? preferredSubtitleLanguages() : []
   if (allsubs && includeSubs) {
-    args.push("--sub-langs", "all");
+    // Canonical languages exclude YouTube's translations from other subtitle tracks.
+    args.unshift('--extractor-args', 'youtube:skip=translated_subs')
+    args.push('--sub-langs', subtitleLanguagePattern(languages))
   }
   if (includeAutoSubs) {
     args.push("--write-auto-subs");
@@ -138,6 +144,11 @@ export async function runYTDLHook(url: string) {
     // parse the result
     try {
       let json = JSON.parse(out.stdout);
+      if (languages.length && json.requested_subtitles) {
+        const matchesLanguage = subtitleLanguageMatcher(languages)
+        json.requested_subtitles = Object.fromEntries(Object.entries(json.requested_subtitles)
+          .filter(([language]) => matchesLanguage(language)))
+      }
       console.log("Youtube-dl succeeded.");
       ytdlSuccess(url, json, option);
     } catch (err) {

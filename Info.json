@@ -1,10 +1,10 @@
 {
-  "name": "Online Media",
+  "name": "Online Media · Native Tracks",
   "identifier": "io.iina.ytdl",
-  "version": "0.9.10",
-  "ghRepo": "iina/plugin-online-media",
-  "ghVersion": 12,
-  "description": "Official plugin for playing online media via yt-dlp / youtube-dl. The built-in youtube-dl support will be disabled when this plugin is enabled.",
+  "version": "0.10.0",
+  "ghRepo": "windlandneko/plugin-online-media",
+  "ghVersion": 13,
+  "description": "Online media with native video, audio and dual-subtitle track selection. Fork of iina/plugin-online-media.",
   "author": {
     "name": "IINA Developers",
     "email": "developers@iina.io",
@@ -20,7 +20,6 @@
     "js_runtime": "",
     "excluded_urls": "",
     "try_ytdl_first": false,
-    "use_manifests": false,
     "raw_options": "",
     "include_subs": true,
     "include_auto_subs": false,

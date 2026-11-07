@@ -14,15 +14,21 @@ const safeProtos = new Set([
   "data",
 ]);
 
-export function ytdlCodecToMpvCodec(codec: string) {
-  if (codec === "vtt") return "webvtt";
-  if (codec === "opus") return "opus";
-  if (codec.startsWith("vp9")) return "vp9";
-  if (codec.startsWith("avc")) return "h264";
-  if (codec.startsWith("av0")) return "av1";
-  if (codec.startsWith("mp4a")) return "aac";
-  if (codec.startsWith("hev1")) return "hevc";
-  return null;
+export function ytdlCodecToMpvCodec(codec?: string) {
+  if (!codec || codec === 'none') return null
+  const aliases: Record<string, string> = {
+    vtt: 'webvtt', srt: 'subrip', ssa: 'ass', ttml: 'ttml',
+    m4a: 'aac', h265: 'hevc',
+  }
+  if (aliases[codec]) return aliases[codec]
+  if (/^(vp09|vp9)/.test(codec)) return 'vp9'
+  if (/^(avc|h264)/.test(codec)) return 'h264'
+  if (/^(av01|av1)/.test(codec)) return 'av1'
+  if (codec.startsWith('mp4a')) return 'aac'
+  if (/^(hev|hvc|dvhe|dvh1)/.test(codec)) return 'hevc'
+  if (codec === 'ec-3') return 'eac3'
+  if (codec === 'ac-3') return 'ac3'
+  return codec
 }
 
 export function optionWasSet(name: string) {
