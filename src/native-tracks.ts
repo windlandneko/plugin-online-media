@@ -38,8 +38,9 @@ type MediaKind = 'video' | 'audio'
 const mediaKinds = (f: YTDL.Video) =>
   (['video', 'audio'] as MediaKind[]).filter(
     (kind) =>
-      f[kind === 'video' ? 'vcodec' : 'acodec'] &&
-      f[kind === 'video' ? 'vcodec' : 'acodec'] !== 'none',
+      f[kind === 'video' ? 'vcodec' : 'acodec'] !== 'none' &&
+      (f[kind === 'video' ? 'vcodec' : 'acodec'] ||
+        f[kind === 'video' ? 'acodec' : 'vcodec'] === 'none'),
   )
 
 function stream(url: string, metadata: string[], duration?: number) {
