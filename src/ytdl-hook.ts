@@ -62,17 +62,8 @@ export async function runYTDLHook(url: string) {
   const rawArgs = splitArguments(rawOptions.replace(/—/g, '--'))
   rawArgs.forEach((arg, index) => {
     if (arg.startsWith("--")) {
-      let argName: string;
-      let argValue: string;
-      // handle both --arg=value and --arg value cases
-      if (arg.includes("=")) {
-        const splitted = arg.split("=");
-        argName = splitted[0].substring(2);
-        argValue = splitted.slice(1).join("=");
-      } else {
-        argName = arg.substring(2);
-        argValue = rawArgs[index + 1];
-      }
+      const [argName, ...value] = arg.slice(2).split('=')
+      const argValue = value.length ? value.join('=') : rawArgs[index + 1]
       if (["sub-lang", "sub-langs", "srt-lang"].includes(argName) && argValue) {
         allsubs = false;
       } else if (argName === "sub-format" && argValue) {

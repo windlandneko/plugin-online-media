@@ -141,10 +141,10 @@ export function edlTrackJoined(
     if (dash && index === 0 && !frag.duration) {
       if (fragments.length === 1) return null
       parts[0] += `,init=${edlEscape(url)}`
-    } else {
-      if (dash && !(frag.duration > 0)) return null
-      parts.push(edlEscape(url) + (frag.duration ? `,length=${frag.duration}` : ''))
+      continue
     }
+    if (dash && !(frag.duration > 0)) return null
+    parts.push(edlEscape(url) + (frag.duration ? `,length=${frag.duration}` : ''))
   }
 
   return `edl://${parts.join(";")};`;
@@ -184,22 +184,22 @@ export function splitArguments(input: string): string[] {
   let started = false
   for (let index = 0; index < input.length; index++) {
     const char = input[index]
+    if (!quote && /\s/.test(char)) {
+      if (started) args.push(word)
+      word = ''
+      started = false
+      continue
+    }
+    started = true
     if (char === '\\' && quote !== "'" && index + 1 < input.length) {
       word += input[++index]
-      started = true
     } else if (quote) {
       if (char === quote) quote = ''
       else word += char
     } else if (char === '"' || char === "'") {
       quote = char
-      started = true
-    } else if (/\s/.test(char)) {
-      if (started) args.push(word)
-      word = ''
-      started = false
     } else {
       word += char
-      started = true
     }
   }
   if (started) args.push(word)
