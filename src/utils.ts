@@ -32,26 +32,24 @@ export function ytdlCodecToMpvCodec(codec?: string) {
 }
 
 export function optionWasSet(name: string) {
-  return mpv.getFlag(`"option-info/${name}/set-from-commandline"`);
+  return mpv.getFlag(`option-info/${name}/set-from-commandline`);
 }
 
 export function optionWasSetLocally(name: string) {
-  return mpv.getFlag(`"option-info/${name}/set-locally"`);
+  return mpv.getFlag(`option-info/${name}/set-locally`);
 }
 
 export function setHTTPHeaders(headers?: Record<string, string>) {
   if (!headers) return;
 
-  const ua = headers["User-Agent"];
-  if (ua && !optionWasSet("user-agent")) {
-    mpv.set("file-local-options/user-agent", ua);
-  }
-
-  const mpvHeaders: string[] = [];
-  for (const extraField of ["Cookie", "Referer", "X-Forwarded-For"]) {
-    const value = headers[extraField];
-    if (value) {
-      mpvHeaders.push(`${extraField}: ${value}`);
+  const mpvHeaders: string[] = []
+  for (const [key, value] of Object.entries(headers)) {
+    const name = key.toLowerCase()
+    if (!/^[!#$%&'*+.^_`|~0-9a-z-]+$/.test(name) || /[\r\n]/.test(value)) continue
+    if (name === 'user-agent') {
+      if (value && !optionWasSet('user-agent')) mpv.set('file-local-options/user-agent', value)
+    } else if (!['host', 'content-length', 'connection'].includes(name)) {
+      mpvHeaders.push(`${name}: ${value}`)
     }
   }
 
@@ -61,7 +59,9 @@ export function setHTTPHeaders(headers?: Record<string, string>) {
 }
 
 export function edlEscape(url: string) {
-  return `%${url.length}%${url}`;
+  // EDL counts UTF-8 bytes, while JavaScript string.length counts UTF-16 units.
+  const bytes = encodeURIComponent(url).replace(/%[A-F\d]{2}/gi, '_').length
+  return `%${bytes}%${url}`;
 }
 
 export function isSafeURL(url: string) {
@@ -70,7 +70,7 @@ export function isSafeURL(url: string) {
   if (match && match[1] && safeProtos.has(match[1])) {
     return true;
   }
-  console.log(`Ignoring potentially unsafe url ${url}`);
+  console.warn("Ignoring unsafe stream URL");
   return false;
 }
 
@@ -133,23 +133,18 @@ export function edlTrackJoined(
     return null;
   }
 
-  const parts: string[] = [];
-
-  if (protocol === "http_dash_segments" && !fragments[0].duration && !isLive) {
-    // assume MP4 DASH initialization segment
-    parts.push(`!mp4_dash,init=${edlEscape(joinURL(base, fragments[0]))}`);
-
-    for (let i = 1; i < fragments.length; i++) {
-      if (!fragments[i].duration) {
-        console.error("EDL doesn't support fragments without duration with MP4 DASH");
-        return null;
-      }
+  const dash = protocol === 'http_dash_segments' && !isLive
+  const parts: string[] = dash ? ['!mp4_dash'] : []
+  for (const [index, frag] of fragments.entries()) {
+    const url = joinURL(base, frag)
+    if (!isSafeURL(url)) return null
+    if (dash && index === 0 && !frag.duration) {
+      if (fragments.length === 1) return null
+      parts[0] += `,init=${edlEscape(url)}`
+    } else {
+      if (dash && !(frag.duration > 0)) return null
+      parts.push(edlEscape(url) + (frag.duration ? `,length=${frag.duration}` : ''))
     }
-  }
-
-  for (const frag of fragments) {
-    if (!isSafeURL(joinURL(base, frag))) return null;
-    parts.push(edlEscape(joinURL(base, frag)) + frag.duration ? `,length=${frag.duration}` : "");
   }
 
   return `edl://${parts.join(";")};`;
@@ -179,4 +174,34 @@ export function formatFileSize(bytes: number, si = false, dp = 1) {
 export function formatSeconds(sec: number | null | undefined) {
   if (sec == null || isNaN(sec)) return "-";
   return new Date(sec * 1000).toISOString().substring(sec < 3600 ? 14 : 11, 19);
+}
+
+/** Split literal CLI options, without shell expansion or command substitution. */
+export function splitArguments(input: string): string[] {
+  const args: string[] = []
+  let word = ''
+  let quote = ''
+  let started = false
+  for (let index = 0; index < input.length; index++) {
+    const char = input[index]
+    if (char === '\\' && quote !== "'" && index + 1 < input.length) {
+      word += input[++index]
+      started = true
+    } else if (quote) {
+      if (char === quote) quote = ''
+      else word += char
+    } else if (char === '"' || char === "'") {
+      quote = char
+      started = true
+    } else if (/\s/.test(char)) {
+      if (started) args.push(word)
+      word = ''
+      started = false
+    } else {
+      word += char
+      started = true
+    }
+  }
+  if (started) args.push(word)
+  return args
 }

@@ -1,4 +1,5 @@
 import {
+  splitArguments,
   setHTTPHeaders,
   isSafeURL,
   edlEscape,
@@ -58,23 +59,19 @@ export async function runYTDLHook(url: string) {
   const includeSubs = opt.includeSubs;
   const includeAutoSubs = includeSubs && opt.includeAutoSubs;
 
-  rawOptions.split(" ").forEach((rawArg, index) => {
-    let arg = rawArg;
-    if (rawArg.includes("—")) {
-      arg = rawArg.replace("—", "--");
-      console.warn(`Argument ${rawArg} contains "—", trying to autocorrect`);
-    }
+  const rawArgs = splitArguments(rawOptions.replace(/—/g, '--'))
+  rawArgs.forEach((arg, index) => {
     if (arg.startsWith("--")) {
       let argName: string;
       let argValue: string;
       // handle both --arg=value and --arg value cases
       if (arg.includes("=")) {
         const splitted = arg.split("=");
-        argName = splitted[0];
-        argValue = splitted[1];
+        argName = splitted[0].substring(2);
+        argValue = splitted.slice(1).join("=");
       } else {
         argName = arg.substring(2);
-        argValue = rawOptions[index + 1];
+        argValue = rawArgs[index + 1];
       }
       if (["sub-lang", "sub-langs", "srt-lang"].includes(argName) && argValue) {
         allsubs = false;
