@@ -55,6 +55,7 @@ export function addVideo(json: YTDL.Entity) {
   setHTTPHeaders(media.headers)
   mpv.set('stream-open-filename', streamURL)
   mpv.set('file-local-options/force-media-title', json.title)
+  chapterList = []
   // add chapters
   if (json.chapters) {
     console.log('Adding pre-parsed chapters')
